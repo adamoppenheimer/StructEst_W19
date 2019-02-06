@@ -15,156 +15,113 @@ DATA_DIR = os.path.abspath("")
 INCOMES_FILENAME = os.path.join(DATA_DIR, "data/usincmoms.txt")
 incomes = np.loadtxt(INCOMES_FILENAME)
 incomes[:,1] = incomes[:,1] / 1000
+pcts = incomes[:,0]
+moments = incomes[:,1]
 #%%
 #Problem 1 Part a
-incomes_graph = np.copy(incomes)
-incomes_graph[40,0] = incomes_graph[40,0]/10
-incomes_graph[41,0] = incomes_graph[41,0]/20
-width = 5 * np.ones(42)
-width[40] = 50
-width[41] = 100
-plt.bar(x=incomes_graph[:,1], height=incomes_graph[:,0], width=width)
-plt.title("Percent of Population by Income")
-plt.xlabel("Income ($1000s)")
-plt.ylabel("Percent of Population")
-#plt.show()
+def graph_1_a(pcts):
+    incomes_graph = np.copy(pcts)
+    incomes_graph[40] = incomes_graph[40]/10
+    incomes_graph[41] = incomes_graph[41]/20
+    width = 5 * np.ones(42)
+    width[40] = 50
+    width[41] = 100
+    plt.bar(x=moments, height=incomes_graph, width=width)
+    plt.title("Percent of Population by Income")
+    plt.xlabel("Income ($1000s)")
+    plt.ylabel("Percent of Population")
+graph_1_a(pcts)
 #%%
 #Problem 1 Part b
+#Problem 1 Part b - Define Functions
 def ln_fun_pdf(xvals, mu, sigma):
     pdf_vals = e ** ( - (np.log(xvals) - mu) ** 2 / (2 * sigma ** 2) ) /\
             (xvals * sigma * (2 * math.pi) ** 0.5)
     return pdf_vals
 
-def moments_model(mu, sigma):
-    divisions = np.ones(43)
-    divisions_beginning = np.linspace(0,200,41)
-    divisions[0:41] = divisions_beginning
-    divisions[0] = 1e-10
-    divisions[41] = 250
-    divisions[42] = 350
+def get_dist_pts():
+    dist_pts = np.ones(43)
+    dist_pts_beginning = np.linspace(0,200,41)
+    dist_pts[0:41] = dist_pts_beginning
+    dist_pts[0] = 1e-10
+    dist_pts[41] = 250
+    dist_pts[42] = 350
+    return dist_pts
+
+def moments_model(param_1, param_2, pdf):
+    dist_pts = get_dist_pts()
     integrals = []
 
-    prob_notcut = integrate.quad(ln_fun_pdf, 1e-10,\
-                                        350,\
-                                        args=(mu, sigma))[0]
-    for i in range(len(divisions) - 1):
-        integrals.append(integrate.quad(ln_fun_pdf,\
-                                        divisions[i],\
-                                        divisions[i + 1],\
-                                        args=(mu, sigma))[0]\
-                                        / prob_notcut)
+    prob_notcut = integrate.quad(pdf, 1e-10, 350,\
+                                args=(param_1, param_2))[0]
+    if prob_notcut == 0:
+        return [0] * 42
+    for i in range(len(dist_pts) - 1):
+        vals = integrate.quad(pdf, dist_pts[i],\
+                                dist_pts[i + 1],\
+                                args=(param_1, param_2))[0]
+        integrals.append(vals / prob_notcut)
     return np.array(integrals)
 
-#%%
-def err_vec(xvals, mu, sigma, simple):
+def err_vec_1(xvals, param_1, param_2, pdf, simple):
     moms_data = xvals[:,1]
-    moms_model = moments_model(mu, sigma)
-    #print("Mu: ", mu)
-    #print("Sigma: ", sigma)
+    moms_model = moments_model(param_1, param_2, pdf)
     if simple:
         err_vector = moms_data - moms_model
     else:
-        #import pandas as pd
-        #temp = pd.DataFrame(moms_model)
-        #temp = temp[temp != 0]
-        #if temp.isnull().values.any():
-        #    print("VALUE IS 0!!!!")
-        #    print("Mu is: ", mu)
-        #    print("Sigma is: ", sigma)
         err_vector = (moms_model - moms_data) / moms_data
     return err_vector
 
-def crit(params, *args):
-    mu, sigma = params
-    xvals, W = args
-    err = err_vec(xvals, mu, sigma, simple=False)
+def crit_1(params, *args):
+    param_1, param_2 = params
+    xvals, W, pdf = args
+    err = err_vec_1(xvals, param_1, param_2, pdf, simple=False)
     crit_val = err.T @ W @ err
     return crit_val
+
+def log_avg_income(incomes):
+    income = incomes[:,0] * incomes[:,1]
+    avg_inc = income.sum()
+    return np.log(avg_inc)
 #%%
-income = incomes[:,0] * incomes[:,1]
-avg_inc = income.sum()
-mu_init = np.log(avg_inc)
-#sig_init = 7
-#fun: 0.99997185359359
-#SUCCESS
-#sig_init = 5
-#fun: 0.99997104024862
-#FAILURE
-sig_init = 4
-#fun: 0.9999718535439717
-#SUCCESS
+#Problem 1 Part b - Define Values
+mu_init = log_avg_income(incomes)
+sig_init = 7
+#Using 4 gives a much nicer graph
+
 params_init = np.array([mu_init, sig_init])
 W_hat = np.eye(42)
 W_hat = W_hat * incomes[:,0]
-gmm_args = (incomes, W_hat)
-results = opt.minimize(crit, params_init, args=(gmm_args), tol=1e-20,
-                       method='L-BFGS-B', bounds=((None, None), (1e-10, None)))
-mu_GMM1, sig_GMM1 = results.x
-print('mu_GMM1=', mu_GMM1, ' sig_GMM1=', sig_GMM1)
-print(results)
+gmm_args = (incomes, W_hat, ln_fun_pdf)
 #%%
-centers = incomes[:,1]
+#Problem 1 Part b - Call Functions
+results_b = opt.minimize(crit_1, params_init, args=(gmm_args), tol=1e-20,
+                       method='L-BFGS-B', bounds=((None, None), (1e-10, None)))
+mu_GMM_b, sig_GMM_b = results_b.x
+#%%
+#Problem 1 Part b - Output Results
+print('mu_GMM_b=', mu_GMM_b, ' sig_GMM_b=', sig_GMM_b)
+print(results_b)
+#%%
+#Problem 1 Part b - Print Graphs
+vals_b = moments_model(mu_GMM_b, sig_GMM_b, ln_fun_pdf)
+vals_b[40] = vals_b[40]/10
+vals_b[41] = vals_b[41]/20
 
-vals = moments_model(mu_GMM1, sig_GMM1)#ln_fun_pdf(centers, mu_GMM1, sig_GMM1)
-vals[40] = vals[40]/10
-vals[41] = vals[41]/20
-print(vals)
-
-plt.bar(x=incomes_graph[:,1], height=incomes_graph[:,0], width=width)
-
-plt.scatter(centers, vals,\
+plt.plot(moments, vals_b,\
         linewidth=2, label="Log Normal Function", color="r")
-
-plt.title("Percent of Population by Income")
-plt.xlabel("Income ($1000s)")
-plt.ylabel("Percent of Population")
+graph_1_a(pcts)
+plt.ylim([0, 0.07])
 plt.show()
 #%%
 #Problem 1 Part c
+#Problem 1 Part c - Define Functions
 def gamma_fun_pdf(xvals, alpha, beta):
         pdf_vals = ( (xvals / beta) ** alpha * e ** ( - xvals / beta ) )/\
                    ( xvals * math.gamma(alpha) )
         return pdf_vals
-
-def moments_model_2(alpha, beta):
-    divisions = np.ones(43)
-    divisions_beginning = np.linspace(0,200,41)
-    divisions[0:41] = divisions_beginning
-    divisions[0] = 1e-10
-    divisions[41] = 250
-    divisions[42] = 350
-    integrals = []
-
-    prob_notcut = integrate.quad(gamma_fun_pdf, 1e-10,\
-                                        350,\
-                                        args=(alpha, beta))[0]
-    if prob_notcut == 0:
-        return [0]*42
-    for i in range(len(divisions) - 1):
-        value = integrate.quad(gamma_fun_pdf,\
-                                        divisions[i],\
-                                        divisions[i + 1],\
-                                        args=(alpha, beta))[0]
-        integrals.append(value / prob_notcut)
-    return np.array(integrals)
-
 #%%
-def err_vec_2(xvals, alpha, beta, simple):
-    moms_data = xvals[:,1]
-    moms_model = moments_model_2(alpha, beta)
-    if simple:
-        err_vector = moms_data - moms_model
-    else:
-        err_vector = (moms_model - moms_data) / moms_data
-    return err_vector
-
-def crit_2(params, *args):
-    alpha, beta = params
-    xvals, W = args
-    err = err_vec_2(xvals, alpha, beta, simple=False)
-    crit_val = err.T @ W @ err
-    return crit_val
-
+#Problem 1 Part c - Define Values
 income = incomes[:,0] * incomes[:,1]
 avg_inc = income.sum()
 alpha_init = 3
@@ -172,27 +129,111 @@ beta_init = 20000
 params_init = np.array([alpha_init, beta_init])
 W_hat = np.eye(42)
 W_hat = W_hat * incomes[:,0]
-gmm_args = (incomes, W_hat)
-results = opt.minimize(crit_2, params_init, args=(gmm_args), tol=1e-20,
+gmm_args = (incomes, W_hat, gamma_fun_pdf)
+#%%
+#Problem 1 Part c - Call Functions
+results_c = opt.minimize(crit_1, params_init, args=(gmm_args), tol=1e-20,
                         method='L-BFGS-B',\
                         bounds=((1e-10, None), (1e-10, None)))
-alpha_GMM1, beta_GMM1 = results.x
-print('alpha_GMM1=', alpha_GMM1, ' beta_GMM1=', beta_GMM1)
-print(results)
+alpha_GMM_c, beta_GMM_c = results_c.x
 #%%
-centers = incomes[:,1]
+#Problem 1 Part c - Output Results
+print('alpha_GMM_c=', alpha_GMM_c, ' beta_GMM_c=', beta_GMM_c)
+print(results_c)
+#%%
+#Problem 1 Part c - Print Graphs
+vals_c = moments_model(alpha_GMM_c, beta_GMM_c, gamma_fun_pdf)
+vals_c[40] = vals_c[40]/10
+vals_c[41] = vals_c[41]/20
 
-vals = moments_model_2(alpha_GMM1, beta_GMM1)
-vals[40] = vals[40]/10
-vals[41] = vals[41]/20
-print(vals)
-
-plt.bar(x=incomes_graph[:,1], height=incomes_graph[:,0], width=width)
-
-plt.scatter(centers[1:], vals[1:],\
-        linewidth=2, label="Log Normal Function", color="r")
-
-plt.title("Percent of Population by Income")
-plt.xlabel("Income ($1000s)")
-plt.ylabel("Percent of Population")
+plt.plot(moments[1:], vals_c[1:],\
+        linewidth=2, label="Gamma Function", color="r")
+graph_1_a(pcts)
+plt.ylim([0, 0.07])
 plt.show()
+#%%
+#Problem 1 Part d
+#Problem 1 Part d - Print Graphs
+plt.plot(moments, vals_b,\
+        linewidth=2, label="Log Normal Function", color="r")
+plt.plot(moments[1:], vals_c[1:],\
+        linewidth=2, label="Gamma Function", color="b")
+graph_1_a(pcts)
+plt.legend(loc="upper left")
+plt.ylim([0, 0.07])
+#%%
+#Problem 1 Part d - Answer Question
+print("Log Normal results:")
+print(results_b)
+print("Gamma Results:")
+print(results_c)
+"""
+The most precise way to tell which distribution fits the data
+best is to look at the optimal critical value for each
+model. This can be done because each is estimating equivalent
+parameters to the other, so the critical values can be
+compared. Comparing results, we see that Gamma gives
+a lower critical value, so it should be preferred. This
+can also be noticed by simply looking at the graph, as
+the Gamma function appears to give a better fit overall.
+"""
+#%%
+#Problem 2
+DATA_FILENAME = os.path.join(DATA_DIR, "data/MacroSeries.txt")
+data = np.loadtxt(DATA_FILENAME, delimiter=',',\
+                    usecols=range(4), dtype=np.float128)
+consumption = data[:,0]
+kapital = data[:,1]
+wages = data[:,2]
+interest = data[:,3]
+#%%
+#Problem 2 - Define Functions
+def calc_moms(z_vals, consumption, kapital, wages, alpha, rho, mu):
+    beta = 0.99
+    mom_1 = np.roll(z_vals, -1) - rho * z_vals - (1 - rho) * mu
+    mom_1 = mom_1[:-1].mean()
+    mom_2 = (np.roll(z_vals, -1) - rho * z_vals - (1 - rho) * mu) * z_vals
+    mom_2 = mom_2[:-1].mean()
+    mom_3 = beta * alpha * e ** np.roll(z_vals, -1) * np.roll(kapital, -1) **\
+            (alpha - 1) * consumption / np.roll(consumption, -1) - 1
+    mom_3 = mom_3[:-1].mean()
+    mom_4 = (beta * alpha * e ** np.roll(z_vals, -1) * np.roll(kapital, -1) **\
+            (alpha - 1) * consumption / np.roll(consumption, -1) - 1) *\
+            wages
+    mom_4 = mom_4[:-1].mean()
+    moments = np.array([mom_1, mom_2, mom_3, mom_4])
+    return moments
+
+def err_vec_part2(z_vals, consumption, kapital, wages, alpha, rho, mu):
+    err_vector = calc_moms(z_vals, consumption, kapital, wages, alpha, rho, mu)
+    return err_vector
+
+def crit_part2(params, *args):
+    alpha, rho, mu = params
+    consumption, kapital, wages, interest, W = args
+    z_vals = np.log(interest) - np.log(alpha) - (1 - alpha) * np.log(kapital)
+    err = err_vec_part2(z_vals, consumption, kapital, wages, alpha, rho, mu)
+    crit_val = err.T @ W @ err
+    return crit_val
+#%%
+#Problem 2 - Define Values
+alpha_0 = 0.46
+rho_0 = 0.72
+z_vals = np.log(interest) - np.log(alpha_0) - (1 - alpha_0) * np.log(kapital)
+mu_0 = 9.5#z_vals[0]
+W_hat = np.eye(4)
+
+params_init = np.array([alpha_0, rho_0, mu_0])
+
+gmm_args = (consumption, kapital, wages, interest, W_hat)
+#%%
+#Problem 2 - Call Functions
+results = opt.minimize(crit_part2, params_init, args=(gmm_args), tol=1e-20,
+                        method="L-BFGS-B",\
+                        bounds=((1e-10, 1 - 1e-10),\
+                                (-1 + 1e-10, 1 - 1e-10),\
+                                (1e-10, None)))
+alpha_GMM, rho_GMM, mu_GMM = results.x
+print("alpha_GMM=", alpha_GMM, " rho_GMM=", rho_GMM,\
+        " mu_GMM=", mu_GMM)
+print(results)
