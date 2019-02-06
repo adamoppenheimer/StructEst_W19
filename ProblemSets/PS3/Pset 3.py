@@ -228,9 +228,9 @@ gmm_args = (consumption, kapital, wages, interest, W_hat)
 #Problem 2 - Call Functions
 results_2 = opt.minimize(crit_2, params_init, args=(gmm_args), tol=1e-20,
                         method="L-BFGS-B",\
-                        bounds=((1e-10, 1 - 1e-10),\
-                                (-1 + 1e-10, 1 - 1e-10),\
-                                (1e-10, None)))
+                        bounds=((1e-5, 1 - 1e-5),\
+                                (-1 + 1e-5, 1 - 1e-5),\
+                                (1e-5, None)))
 alpha_GMM_2, rho_GMM_2, mu_GMM_2 = results_2.x
 #%%
 #Problem 2 - Output Results
