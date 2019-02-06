@@ -220,7 +220,7 @@ def crit_2(params, *args):
 alpha_0 = 0.46
 rho_0 = 0.72
 z_vals = np.log(interest) - np.log(alpha_0) - (1 - alpha_0) * np.log(kapital)
-mu_0 = 9.5#z_vals[0]
+mu_0 = z_vals[0]
 W_hat = np.eye(4)
 
 params_init = np.array([alpha_0, rho_0, mu_0])
@@ -228,12 +228,14 @@ params_init = np.array([alpha_0, rho_0, mu_0])
 gmm_args = (consumption, kapital, wages, interest, W_hat)
 #%%
 #Problem 2 - Call Functions
-results = opt.minimize(crit_2, params_init, args=(gmm_args), tol=1e-20,
+results_2 = opt.minimize(crit_2, params_init, args=(gmm_args), tol=1e-20,
                         method="L-BFGS-B",\
                         bounds=((1e-10, 1 - 1e-10),\
                                 (-1 + 1e-10, 1 - 1e-10),\
                                 (1e-10, None)))
-alpha_GMM, rho_GMM, mu_GMM = results.x
-print("alpha_GMM=", alpha_GMM, " rho_GMM=", rho_GMM,\
-        " mu_GMM=", mu_GMM)
-print(results)
+alpha_GMM_2, rho_GMM_2, mu_GMM_2 = results_2.x
+#%%
+#Problem 2 - Output Results
+print("alpha_GMM_2=", alpha_GMM_2, " rho_GMM_2=", rho_GMM_2,\
+        " mu_GMM_2=", mu_GMM_2)
+print(results_2)
