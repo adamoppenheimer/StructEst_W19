@@ -215,8 +215,8 @@ def crit_2(params, *args):
     return crit_val
 #%%
 #Problem 2 - Define Values
-alpha_0 = 0.46
-rho_0 = 0.72
+alpha_0 = 0.99
+rho_0 = 0.7
 z_vals = np.log(interest) - np.log(alpha_0) - (1 - alpha_0) * np.log(kapital)
 mu_0 = z_vals[0]
 W_hat = np.eye(4)
