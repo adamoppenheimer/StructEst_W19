@@ -204,15 +204,15 @@ def calc_moms(z_vals, consumption, kapital, wages, alpha, rho, mu):
     moments = np.array([mom_1, mom_2, mom_3, mom_4])
     return moments
 
-def err_vec_part2(z_vals, consumption, kapital, wages, alpha, rho, mu):
+def err_vec_2(z_vals, consumption, kapital, wages, alpha, rho, mu):
     err_vector = calc_moms(z_vals, consumption, kapital, wages, alpha, rho, mu)
     return err_vector
 
-def crit_part2(params, *args):
+def crit_2(params, *args):
     alpha, rho, mu = params
     consumption, kapital, wages, interest, W = args
     z_vals = np.log(interest) - np.log(alpha) - (1 - alpha) * np.log(kapital)
-    err = err_vec_part2(z_vals, consumption, kapital, wages, alpha, rho, mu)
+    err = err_vec_2(z_vals, consumption, kapital, wages, alpha, rho, mu)
     crit_val = err.T @ W @ err
     return crit_val
 #%%
@@ -228,7 +228,7 @@ params_init = np.array([alpha_0, rho_0, mu_0])
 gmm_args = (consumption, kapital, wages, interest, W_hat)
 #%%
 #Problem 2 - Call Functions
-results = opt.minimize(crit_part2, params_init, args=(gmm_args), tol=1e-20,
+results = opt.minimize(crit_2, params_init, args=(gmm_args), tol=1e-20,
                         method="L-BFGS-B",\
                         bounds=((1e-10, 1 - 1e-10),\
                                 (-1 + 1e-10, 1 - 1e-10),\
