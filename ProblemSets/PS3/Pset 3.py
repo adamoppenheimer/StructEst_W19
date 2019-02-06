@@ -86,9 +86,7 @@ def log_avg_income(incomes):
 #%%
 #Problem 1 Part b - Define Values
 mu_init = log_avg_income(incomes)
-sig_init = 7
-#Using 4 gives a much nicer graph
-
+sig_init = 192
 params_init = np.array([mu_init, sig_init])
 W_hat = np.eye(42)
 W_hat = W_hat * incomes[:,0]
@@ -170,12 +168,12 @@ print(results_c)
 """
 The most precise way to tell which distribution fits the data
 best is to look at the optimal critical value for each
-model. This can be done because each is estimating equivalent
-parameters to the other, so the critical values can be
-compared. Comparing results, we see that Gamma gives
-a lower critical value, so it should be preferred. This
-can also be noticed by simply looking at the graph, as
-the Gamma function appears to give a better fit overall.
+model. This can be done because each is estimating against
+the same moments, so the critical values can be
+compared. Comparing results, we see that Log Normal gives
+a lower critical value, so it should be preferred. Simply
+looking at the graph is not particularly informative, as
+both curves appear to fit the data relatively well.
 """
 #%%
 #Problem 2
