@@ -54,6 +54,7 @@ def moments_model(param_1, param_2, pdf):
 
     prob_notcut = integrate.quad(pdf, 1e-10, 350,\
                                 args=(param_1, param_2))[0]
+
     if prob_notcut == 0:
         return [0] * 42
     for i in range(len(dist_pts) - 1):
